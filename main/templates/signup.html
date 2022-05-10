@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>signup</title>
+</head>
+<body>
+{% block content %}
+    <h1>{% block title %} Add a New Message {% endblock %}</h1>
+    <form method="post">
+        <label for="title">username</label>
+        <br>
+        <input type="text" name="username"
+               placeholder="username"
+               value="{{ request.form['username'] }}">
+        </input>
+        <br>
+
+        <label for="content">password</label>
+        <br>
+        <input type="text" name="password"
+                  placeholder="password"
+                  value="{{ request.form['password'] }}">
+        </input>
+        <br>
+        <button type="submit">Submit</button>
+    </form>
+{% endblock %}
+</body>
+</html>
