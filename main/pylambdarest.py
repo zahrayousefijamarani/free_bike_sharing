@@ -3,9 +3,10 @@ from pylambdarest import route
 user_schema = {
     "type": "object",
     "properties": {
-        "name": {"type": "string"}
+        "name": {"type": "string"},
+        "password": {"type": "string"}
     },
-    "required": ["name"],
+    "required": ["name", "password"],
     "additionalProperties": False
 }
 

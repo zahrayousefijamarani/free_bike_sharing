@@ -11,7 +11,7 @@ class Customer(Base):
     __tablename__ = 'customer'
 
     id = Column(Integer, primary_key=True)
-    name = Column(String)
+    username = Column(String, unique=True)
     password = Column(String)
     status = Column(String)
     loc_x = Column(Integer)
