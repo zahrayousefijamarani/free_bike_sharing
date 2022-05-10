@@ -12,7 +12,8 @@ import sqlalchemy as db
 from sqlalchemy.orm import Session
 
 from main import models
-from main.models import Customer
+from main.haversine import haversine
+from main.models import Customer, Bike
 
 Base = models.Base
 
@@ -27,8 +28,18 @@ engine = db.create_engine('sqlite:///bike_sharing.sqlite')
 Base.metadata.create_all(engine)
 
 
-
+def make_bikes():
+    session = Session(engine)
+    bike1 = Bike(status="available", loc_x=1, loc_y=4)
+    bike2 = Bike(status="available", loc_x=3, loc_y=10)
+    bike3 = Bike(status="available", loc_x=7, loc_y=6)
+    session.add(bike1)
+    session.add(bike2)
+    session.add(bike3)
+    session.commit()
+    session.close()
 
 
 if __name__ == "__main__":
+    make_bikes()
     app.run()
