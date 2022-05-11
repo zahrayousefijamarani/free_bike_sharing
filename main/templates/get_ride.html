@@ -2,29 +2,30 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>signup</title>
+    <title>Get Ride</title>
 </head>
 <body>
 {% block content %}
-    <h1>{% block title %} Signup {% endblock %}</h1>
+    <h1>{% block title %} Get Bike {% endblock %}</h1>
     <form method="post">
         <label for="title">username</label>
         <br>
-        <input type="text" name="username"
-               placeholder="username"
-               value="{{ request.form['username'] }}">
+        <input type="text" name="access_token"
+               placeholder="access_token"
+               value="{{ request.form['access_token'] }}">
         </input>
         <br>
 
         <label for="content">password</label>
         <br>
-        <input type="text" name="password"
-                  placeholder="password"
-                  value="{{ request.form['password'] }}">
+        <input type="number" name="bike_id"
+                  placeholder="bike_id"
+                  value="{{ request.form['bike_id'] }}">
         </input>
         <br>
         <button type="submit">Submit</button>
     </form>
 {% endblock %}
+
 </body>
 </html>

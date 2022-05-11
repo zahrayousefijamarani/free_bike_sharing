@@ -1,3 +1,4 @@
+import base64
 import datetime
 
 import flask
@@ -85,6 +86,22 @@ def signup_view():
         return res.text
 
 
+@app.route('/get_ride_view', methods=['GET', 'POST'])
+def get_ride_view():
+    if request.method == 'GET':
+        return render_template("get_ride.html")
+    else:
+        access_token = request.form['access_token']
+        bike_id = request.form['bike_id']
+        dictToSend = {"bike_id": bike_id}
+        headers = {
+            'Authorization': "Bearer " + access_token
+        }
+        res = requests.get('http://localhost:5000//get_ride', json=dictToSend, headers=headers)
+
+        return res.text
+
+
 # --------------------------------------------------------------------------------
 # Create a route to authenticate your users and return JWTs. The
 # create_access_token() function is used to actually generate the JWT.
@@ -94,12 +111,17 @@ def login():
     password = request.json.get("password", None)
 
     session = Session(engine)
-    user_obj = session.query(Customer).get({"username": username, "password": password})
-    session.close()
+    user_obj = session.query(Customer).filter_by(username=username).first()
+    # user_obj = session.query(Customer).get({"username": username, "password": password})
     if user_obj is None:
-        return jsonify({"msg": "Username Or Password is incorrect"}), 401
+        session.close()
+        return jsonify({"Error": "Username is incorrect"}), 401
+    if user_obj.password != password:
+        session.close()
+        return jsonify({"Error": "Password is incorrect"}), 401
 
     access_token = create_access_token(identity=user_obj.id)
+    session.close()
     return jsonify(access_token=access_token)
 
 
@@ -107,20 +129,22 @@ def login():
 def signup():
     username = request.json.get("username", None)
     password = request.json.get("password", None)
-    # try:
-    session = Session(engine)
-    user = Customer(username=username, password=password)
-    session.add(user)
-    session.commit()
-    session.close()
-    user_id = user.id
-    print(user_id)
-    # except:
-    #     print("problem")
-    #     return jsonify({"msg": "Bad username or password"}), 401
+    try:
+        session = Session(engine)
+        user = Customer(username=username, password=password)
+        session.add(user)
+        session.commit()
+        user_id = user.id
+        session.close()
+        print(user_id)
+    except:
+        print("problem")
+        return jsonify({"msg": "Bad username or password"}), 401
 
     access_token = create_access_token(identity=user_id)
     return jsonify(access_token=access_token)
+
+
 # --------------------------------------------------------------------------------
 
 
@@ -139,7 +163,7 @@ def getRide():
         return jsonify({"msg": "Format of ID is not correct"}), 401
 
     session = Session(engine)
-    bike_obj = session.query(Bike).get({"id": bike_id})
+    bike_obj = session.query(Bike).get(bike_id)
     if bike_obj is None:
         session.close()
         return jsonify({"msg": "Bike not found"}), 401
@@ -147,15 +171,16 @@ def getRide():
         session.close()
         return jsonify({"msg": "Bike is not available"}), 401
 
-    user_obj = session.query(Customer).get({"id": current_user})
+    user_obj = session.query(Customer).get(current_user)
     if haversine(bike_obj.loc_x, bike_obj.loc_y, user_obj.loc_x, user_obj.loc_y) < 100:
         user_obj.status = "riding"
         bike_obj.status = "busy"
         ride = Ride(customer_id=user_obj.id, bike_id=bike_obj.id, status="ongoing", date=func.current_date())
         session.add(ride)
         session.commit()
+        ride_id = ride.id
         session.close()
-        return jsonify({"msg": "ride_id:" + str(ride.id)}), 200
+        return jsonify({"msg": "ride_id:" + str(ride_id)}), 200
     session.close()
     return jsonify({"msg": "Bike is far from you"}), 401
 
@@ -173,13 +198,13 @@ def endRide():
         print("problem")
         return jsonify({"msg": "Format of ID is not correct"}), 401
     session = Session(engine)
-    ride_obj = session.query(Ride).get({"id": ride_id})
+    ride_obj = session.query(Ride).get(ride_id)
     if ride_obj.customer_id != current_user:
         session.close()
         return jsonify({"msg": "You are not the rider"}), 401
 
-    user_obj = session.query(Customer).get({"id": current_user})
-    bike_obj = session.query(Bike).get({"id": ride_obj.bike_id})
+    user_obj = session.query(Customer).get(current_user)
+    bike_obj = session.query(Bike).get(ride_obj.bike_id)
 
     user_obj.status = "free"
     bike_obj.status = "available"
