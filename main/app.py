@@ -16,11 +16,18 @@ import sqlalchemy as db
 from sqlalchemy.orm import Session
 
 from main import models
+from main.PointitngService import pointing
+from main.event_model import User, Riding
 from main.haversine import haversine
 from main.models import Customer, Bike, Ride
 
+from rq import Queue
+from rq.job import Job
+
 from sqlalchemy import Date, func
 import requests
+
+from main.worker import conn
 
 Base = models.Base
 
@@ -29,10 +36,14 @@ app.config["JWT_SECRET_KEY"] = "se-lab"
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = datetime.timedelta(minutes=5)
 jwt = JWTManager(app)
 
+q = Queue(connection=conn)
+
 engine = db.create_engine('sqlite:///bike_sharing.sqlite')
 # connection = engine.connect()
 # metadata = db.MetaData()
 Base.metadata.create_all(engine)
+
+event_engine = db.create_engine('sqlite:///bike_sharing.sqlite')
 
 
 def make_bikes():
@@ -69,7 +80,9 @@ def login_view():
     else:
         username = request.form['username']
         password = request.form['password']
-        dictToSend = {'username': username, "password": password}
+        loc_x = request.form['loc_x']
+        loc_y = request.form['loc_y']
+        dictToSend = {'username': username, "password": password, "loc_x": loc_x, "loc_y": loc_y}
         res = requests.post('http://localhost:5000/login', json=dictToSend)
         return res.text
 
@@ -81,7 +94,9 @@ def signup_view():
     else:
         username = request.form['username']
         password = request.form['password']
-        dictToSend = {'username': username, "password": password}
+        loc_x = request.form['loc_x']
+        loc_y = request.form['loc_y']
+        dictToSend = {'username': username, "password": password, "loc_x": loc_x, "loc_y": loc_y}
         res = requests.post('http://localhost:5000//signup', json=dictToSend)
         return res.text
 
@@ -99,6 +114,18 @@ def get_ride_view():
         }
         res = requests.get('http://localhost:5000//get_ride', json=dictToSend, headers=headers)
         return res.text
+
+
+@app.route('/update_user', methods=['POST'])
+def get_ride_view():
+    point = request.json.get("point", None)
+    user_id = request.json.get("user_id", None)
+    session = Session(engine)
+    user_obj = session.query(Customer).get(user_id)
+    user_obj.total_points += point
+    session.commit()
+    session.close()
+    return "done"
 
 
 # --------------------------------------------------------------------------------
@@ -121,8 +148,8 @@ def login():
         session.close()
         return jsonify({"Error": "Password is incorrect"}), 401
 
-    user_obj.loc_x = int(loc_x)
-    user_obj.loc_y = int(loc_y)
+    user_obj.loc_x = int(str(loc_x))
+    user_obj.loc_y = int(str(loc_y))
     session.commit()
     access_token = create_access_token(identity=user_obj.id)
     session.close()
@@ -220,7 +247,17 @@ def endRide():
     ride_obj.status = "finished"
     ride_obj.distance = haversine(bike_obj.loc_x, bike_obj.loc_y, bike_loc_x, bike_loc_y)
     session.commit()
+
+    user = User(user_obj)
+    riding = Riding(ride_obj)
+    users_count = session.query(Customer).count()
     session.close()
+
+    job = q.enqueue_call(
+        func=pointing, args=(riding, user, users_count,), result_ttl=5000
+    )
+    print(job.get_id())
+
     return jsonify({"msg": "end of riding"}), 200
 
 
