@@ -116,8 +116,26 @@ def get_ride_view():
         return res.text
 
 
+@app.route('/end_ride_view', methods=['GET', 'POST'])
+def end_ride_view():
+    if request.method == 'GET':
+        return render_template("end_ride.html")
+    else:
+        access_token = request.form['access_token']
+        ride_id = request.form['ride_id']
+        loc_x = request.form['loc_x']
+        loc_y = request.form['loc_y']
+
+        dictToSend = {"access_token": access_token, "ride_id": ride_id, "loc_x": loc_x, "loc_y": loc_y}
+        headers = {
+            'Authorization': "Bearer " + access_token
+        }
+        res = requests.get('http://localhost:5000//end_ride', json=dictToSend, headers=headers)
+        return res.text
+
+
 @app.route('/update_user', methods=['POST'])
-def get_ride_view():
+def update_user_view():
     point = request.json.get("point", None)
     user_id = request.json.get("user_id", None)
     session = Session(engine)
