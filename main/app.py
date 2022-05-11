@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 
 from main import models
 from main.PointitngService import pointing
-from main.event_model import User, Riding
+from main.event_model import Riding
 from main.haversine import haversine
 from main.models import Customer, Bike, Ride
 
@@ -172,7 +172,6 @@ def login():
     access_token = create_access_token(identity=user_obj.id)
     session.close()
     return render_template("homepage.html", access_token=access_token)
-    # return jsonify(access_token=access_token)
 
 
 @app.route("/signup", methods=["POST"])
@@ -244,8 +243,8 @@ def getRide():
 def endRide():
     current_user = get_jwt_identity()
     ride_id = request.json.get("ride_id", None)
-    bike_loc_x = request.json.get("loc_x", None)
-    bike_loc_y = request.json.get("loc_y", None)
+    bike_loc_x = int(request.json.get("loc_x", None))
+    bike_loc_y = int(request.json.get("loc_y", None))
     try:
         ride_id = int(ride_id)
     except:
@@ -266,14 +265,11 @@ def endRide():
     ride_obj.distance = haversine(bike_obj.loc_x, bike_obj.loc_y, bike_loc_x, bike_loc_y)
     session.commit()
 
-    user = User(user_obj)
     riding = Riding(ride_obj)
     users_count = session.query(Customer).count()
     session.close()
 
-    job = q.enqueue_call(
-        func=pointing, args=(riding, user, users_count,), result_ttl=5000
-    )
+    job = q.enqueue_call( func=pointing, args=(riding, users_count,), result_ttl=5000)
     print(job.get_id())
 
     return jsonify({"msg": "end of riding"}), 200
