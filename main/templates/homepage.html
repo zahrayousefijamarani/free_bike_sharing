@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Homepage</title>
+</head>
+<body>
+{% block content %}
+    <h1>Your access_token is : </h1>
+    <h5>{{access_token}}</h5>
+    <form method="get" action="/get_ride_view">
+        <input type="submit" value="get_ride" name="get_ride"/>
+    </form>
+{% endblock %}
+</body>
+</html>

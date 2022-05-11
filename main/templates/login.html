@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Login</title>
+    <title>Account</title>
 </head>
 <body>
 {% block content %}
@@ -23,6 +23,23 @@
                   value="{{ request.form['password'] }}">
         </input>
         <br>
+
+        <label for="content">X location </label>
+        <br>
+        <input type="number" name="loc_x"
+                  placeholder="loc_x"
+                  value="{{ request.form['loc_x'] }}">
+        </input>
+        <br>
+
+        <label for="content">Y location </label>
+        <br>
+        <input type="number" name="loc_y"
+                  placeholder="loc_y"
+                  value="{{ request.form['loc_y'] }}">
+        </input>
+        <br>
+
         <button type="submit">Submit</button>
     </form>
 {% endblock %}

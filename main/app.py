@@ -77,7 +77,7 @@ def login_view():
 @app.route('/signup_view', methods=['GET', 'POST'])
 def signup_view():
     if request.method == 'GET':
-        return render_template("signup.html")
+        return render_template("login.html")
     else:
         username = request.form['username']
         password = request.form['password']
@@ -98,7 +98,6 @@ def get_ride_view():
             'Authorization': "Bearer " + access_token
         }
         res = requests.get('http://localhost:5000//get_ride', json=dictToSend, headers=headers)
-
         return res.text
 
 
@@ -109,6 +108,8 @@ def get_ride_view():
 def login():
     username = request.json.get("username", None)
     password = request.json.get("password", None)
+    loc_x = request.json.get("loc_x", None)
+    loc_y = request.json.get("loc_y", None)
 
     session = Session(engine)
     user_obj = session.query(Customer).filter_by(username=username).first()
@@ -120,18 +121,25 @@ def login():
         session.close()
         return jsonify({"Error": "Password is incorrect"}), 401
 
+    user_obj.loc_x = int(loc_x)
+    user_obj.loc_y = int(loc_y)
+    session.commit()
     access_token = create_access_token(identity=user_obj.id)
     session.close()
-    return jsonify(access_token=access_token)
+    return render_template("homepage.html", access_token=access_token)
+    # return jsonify(access_token=access_token)
 
 
 @app.route("/signup", methods=["POST"])
 def signup():
     username = request.json.get("username", None)
     password = request.json.get("password", None)
+    loc_x = request.json.get("loc_x", None)
+    loc_y = request.json.get("loc_y", None)
+
     try:
         session = Session(engine)
-        user = Customer(username=username, password=password)
+        user = Customer(username=username, password=password, loc_y=int(loc_y), loc_x=int(loc_x))
         session.add(user)
         session.commit()
         user_id = user.id
@@ -142,7 +150,8 @@ def signup():
         return jsonify({"msg": "Bad username or password"}), 401
 
     access_token = create_access_token(identity=user_id)
-    return jsonify(access_token=access_token)
+    # return jsonify(access_token=access_token)
+    return render_template("homepage.html", access_token=access_token)
 
 
 # --------------------------------------------------------------------------------
